@@ -149,6 +149,12 @@ resource "openstack_compute_instance_v2" "Managment" {
   }
   user_data =  <<-EOT
 #!/bin/bash
+sudo useradd -m -s /bin/bash ${var.managment_user}
+sudo usermod -aG sudo ${var.managment_user}
+mkdir /home/${var.managment_user}/.ssh
+echo "${var.ssh_key}" >> /home/${var.managment_user}/.ssh/authorized_keys
+su - ${var.managment_user}
+cd /home/${var.managment_user}/
 sudo apt update
 sudo apt install -y ansible
 echo -e 'all:
@@ -159,8 +165,10 @@ ${join("\n", [for instance in openstack_compute_instance_v2.managers : "        
     workers:
       hosts:
 ${join("\n", [for instance in openstack_compute_instance_v2.Workers : "       ${instance.network.0.fixed_ip_v4}:"])}
-' > /home/debian/inventory.yml
+' > ~/inventory.yml
+git clone https://github.com/PAPAMICA/infra_swarm.git
   EOT
+
 
 }
 
