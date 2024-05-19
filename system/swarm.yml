@@ -18,7 +18,7 @@
 
     - name: Add Docker repository
       apt_repository:
-        repo: "deb https://download.docker.com/linux/debian $(lsb_release -cs) stable"
+        repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable"
         state: present
 
     - name: Install Docker
