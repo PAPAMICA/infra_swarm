@@ -7,18 +7,18 @@
   tasks:
     - name: Install required packages
       apt:
-        name: ['apt-transport-https', 'ca-certificates', 'curl', 'software-properties-common']
+        name: ['apt-transport-https', 'ca-certificates', 'gpg', 'curl', 'software-properties-common']
         state: present
         update_cache: yes
 
     - name: Add Docker GPG key
       apt_key:
-        url: https://download.docker.com/linux/ubuntu/gpg
+        url: https://download.docker.com/linux/debian/gpg 
         state: present
 
     - name: Add Docker repository
       apt_repository:
-        repo: "deb https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+        repo: "deb https://download.docker.com/linux/debian $(lsb_release -cs) stable"
         state: present
 
     - name: Install Docker
