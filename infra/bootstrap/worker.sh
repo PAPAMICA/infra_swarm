@@ -1,4 +1,8 @@
 #!/bin/bash
+sudo useradd -m -s /bin/bash ansible
+echo "ansible ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/ansible
+mkdir /home/ansible/.ssh
+echo "${var.ansible_publickey}" >> /home/ansible/.ssh/authorized_keys
 # Docker install
 sudo apt update
 sudo apt-get install -y apt-transport-https ca-certificates curl gnupg2 software-properties-common

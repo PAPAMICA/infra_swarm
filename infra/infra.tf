@@ -150,14 +150,26 @@ resource "openstack_compute_instance_v2" "Managment" {
   user_data =  <<-EOT
 #!/bin/bash
 sudo useradd -m -s /bin/bash ${var.managment_user}
-sudo usermod -aG sudo ${var.managment_user}
+echo "${var.managment_user} ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/${var.managment_user}
 mkdir /home/${var.managment_user}/.ssh
 echo "${var.ssh_key}" >> /home/${var.managment_user}/.ssh/authorized_keys
-su - ${var.managment_user}
+sudo useradd -m -s /bin/bash ansible
+echo "ansible ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/ansible
+mkdir /home/ansible/.ssh
+echo "${var.ansible_publickey}" >> /home/ansible/.ssh/authorized_keys
+echo "${var.ssh_key}" >> /home/ansible/.ssh/authorized_keys
+echo "${var.ansible_privatekey}" > /home/ansible/.ssh/id_rsa
+chmod 600 /home/ansible/.ssh/id_rsa
+chown ansible:ansible /home/ansible/.ssh/id_rsa
+su ${var.managment_user}
 cd /home/${var.managment_user}/
 sudo apt update
-sudo apt install -y ansible
+sudo apt install -y ansible git
 echo -e 'all:
+  vars:
+    ansible_ssh_private_key_file: /home/ansible/.ssh/id_rsa
+    ansible_user: ansible
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=accept-new'
   children:
     managers:
       hosts:
@@ -165,8 +177,8 @@ ${join("\n", [for instance in openstack_compute_instance_v2.managers : "        
     workers:
       hosts:
 ${join("\n", [for instance in openstack_compute_instance_v2.Workers : "       ${instance.network.0.fixed_ip_v4}:"])}
-' > ~/inventory.yml
-git clone https://github.com/PAPAMICA/infra_swarm.git
+' > /home/${var.managment_user}/inventory.yml
+git clone https://github.com/PAPAMICA/infra_swarm.git /home/${var.managment_user}/config
   EOT
 
 
@@ -196,7 +208,13 @@ resource "openstack_compute_instance_v2" "managers" {
     name = "private_network"
     fixed_ip_v4 = "10.10.0.1${count.index + 1}"
   }
-  user_data = file("bootstrap/manager.sh")
+  user_data =  <<-EOT
+#!/bin/bash
+sudo useradd -m -s /bin/bash ansible
+echo "ansible ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/ansible
+mkdir /home/ansible/.ssh
+echo "${var.ansible_publickey}" >> /home/ansible/.ssh/authorized_keys
+  EOT
 }
 
 resource "openstack_blockstorage_volume_v3" "managers" {
@@ -227,7 +245,13 @@ resource "openstack_compute_instance_v2" "Workers" {
     name = "private_network"
     fixed_ip_v4 = "10.10.0.5${count.index + 1}"
   }
-  user_data = file("bootstrap/worker.sh")
+  user_data =  <<-EOT
+#!/bin/bash
+sudo useradd -m -s /bin/bash ansible
+echo "ansible ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/ansible
+mkdir /home/ansible/.ssh
+echo "${var.ansible_publickey}" >> /home/ansible/.ssh/authorized_keys
+  EOT
 }
 
 resource "openstack_blockstorage_volume_v3" "Workers" {
